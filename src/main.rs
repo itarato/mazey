@@ -1,5 +1,6 @@
 use std::env::args;
 
+use draw::{render, shape::LinePoint, Canvas, Color, Drawing, Point, Shape, Style, SvgRenderer};
 use rand::prelude::*;
 
 #[derive(Debug, Default)]
@@ -108,7 +109,7 @@ impl Maze {
         }
     }
 
-    fn dump(&self) {
+    fn dump_ascii(&self) {
         for y in 0..self.height {
             print!("█");
             for x in 0..self.width {
@@ -142,6 +143,64 @@ impl Maze {
 
         print!("\n\n");
     }
+
+    fn dump_image_file(&self) {
+        let cell_size = 16u32;
+        let cell_size_f32 = cell_size as f32;
+        let w: u32 = cell_size * self.width as u32;
+        let h: u32 = cell_size * self.height as u32;
+        let mut canvas: Canvas = Canvas::new(w, h);
+
+        canvas.display_list.add(
+            Drawing::new()
+                .with_shape(Shape::Rectangle {
+                    width: w,
+                    height: h,
+                })
+                .with_style(Style::stroked(4, Color::black())),
+        );
+
+        let line_map = vec![
+            vec![0f32, 0f32, 1f32, 0f32],
+            vec![1f32, 0f32, 1f32, 1f32],
+            vec![0f32, 1f32, 1f32, 1f32],
+            vec![0f32, 0f32, 0f32, 1f32],
+        ];
+
+        for y in 0..self.height {
+            for x in 0..self.width {
+                let i = y * self.width + x;
+
+                let start_x: f32 = x as f32 * cell_size as f32;
+                let start_y: f32 = y as f32 * cell_size as f32;
+
+                for dir in 0..2 {
+                    if !self.cells[i].paths[dir] {
+                        continue;
+                    }
+
+                    canvas.display_list.add(
+                        Drawing::new()
+                            .with_shape(Shape::Line {
+                                start: Point {
+                                    x: start_x + (cell_size_f32 * line_map[dir][0]),
+                                    y: start_y + (cell_size_f32 * line_map[dir][1]),
+                                },
+                                points: vec![LinePoint::Straight {
+                                    point: Point {
+                                        x: start_x + (cell_size_f32 * line_map[dir][2]),
+                                        y: start_y + (cell_size_f32 * line_map[dir][3]),
+                                    },
+                                }],
+                            })
+                            .with_style(Style::stroked(4, Color::black())),
+                    );
+                }
+            }
+        }
+
+        render::save(&canvas, "./mazey.svg", SvgRenderer::new()).expect("Image write has failed");
+    }
 }
 
 fn main() {
@@ -158,5 +217,6 @@ fn main() {
 
     let mut maze = Maze::new_full(width, height);
     maze.sidewinder_maze_creation();
-    maze.dump();
+    maze.dump_ascii();
+    maze.dump_image_file();
 }
