@@ -109,6 +109,7 @@ impl Maze {
         }
     }
 
+    #[allow(unused)]
     fn dump_ascii(&self) {
         for y in 0..self.height {
             print!("█");
@@ -144,8 +145,8 @@ impl Maze {
         print!("\n\n");
     }
 
-    fn dump_image_file(&self) {
-        let cell_size = 16u32;
+    #[allow(unused)]
+    fn dump_image_file(&self, cell_size: u32, wall_thickness: u32) {
         let cell_size_f32 = cell_size as f32;
         let w: u32 = cell_size * self.width as u32;
         let h: u32 = cell_size * self.height as u32;
@@ -157,7 +158,7 @@ impl Maze {
                     width: w,
                     height: h,
                 })
-                .with_style(Style::stroked(4, Color::black())),
+                .with_style(Style::stroked(wall_thickness, Color::black())),
         );
 
         let line_map = vec![
@@ -193,7 +194,7 @@ impl Maze {
                                     },
                                 }],
                             })
-                            .with_style(Style::stroked(4, Color::black())),
+                            .with_style(Style::stroked(wall_thickness, Color::black())),
                     );
                 }
             }
@@ -217,6 +218,6 @@ fn main() {
 
     let mut maze = Maze::new_full(width, height);
     maze.sidewinder_maze_creation();
-    maze.dump_ascii();
-    maze.dump_image_file();
+    // maze.dump_ascii();
+    maze.dump_image_file(8, 2);
 }
