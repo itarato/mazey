@@ -8,6 +8,8 @@ const EAST: usize = 1;
 const SOUTH: usize = 2;
 const WEST: usize = 3;
 
+const NEIGHBOUR_MAP: [[i32; 2]; 4] = [[0, -1], [1, 0], [0, 1], [-1, 0]];
+
 #[derive(Debug, Default)]
 struct Cell {
     // North > east > south > west.
@@ -54,22 +56,41 @@ impl Maze {
         }
     }
 
+    fn connect_cells(&mut self, x: usize, y: usize, dir: usize) {
+        let i = y * self.width + x;
+
+        self.cells[i].paths[dir] = false;
+        let opposite_cell_x: i32 = x as i32 + NEIGHBOUR_MAP[dir][0];
+        let opposite_cell_y: i32 = y as i32 + NEIGHBOUR_MAP[dir][1];
+
+        if opposite_cell_x >= 0
+            && opposite_cell_y >= 0
+            && opposite_cell_x < self.width as i32
+            && opposite_cell_y < self.height as i32
+        {
+            let opposite_i = opposite_cell_y * self.width as i32 + opposite_cell_x;
+            self.cells[opposite_i as usize].paths[(dir + 2) % 4] = false;
+        }
+    }
+
     #[allow(unused)]
     fn binary_tree_maze_creation(&mut self) {
         let mut rng = rand::thread_rng();
 
         for y in 0..self.height {
             for x in 0..self.width {
-                let i = y * self.width + x;
-
                 if y == 0 && x == self.width - 1 {
                     continue;
-                } else if y == 0 {
-                    self.cells[i].paths[EAST] = false;
-                } else if x == self.width - 1 {
-                    self.cells[i].paths[NORTH] = false;
                 } else {
-                    self.cells[i].paths[rng.gen_range(0..=1)] = false;
+                    let dir = if y == 0 {
+                        EAST
+                    } else if x == self.width - 1 {
+                        NORTH
+                    } else {
+                        rng.gen_range(0..=1)
+                    };
+
+                    self.connect_cells(x, y, dir);
                 }
             }
         }
@@ -88,26 +109,28 @@ impl Maze {
 
                 if y == 0 && x == self.width - 1 {
                     continue;
-                } else if x == self.width - 1 {
-                    // Check length of run.
-                    // Pick on randomly and erast north.
-                    let run_rand_i = rng.gen_range(0..=run_length);
-                    self.cells[i - run_rand_i].paths[NORTH] = false;
-
-                    run_length = 0;
-                } else if y == 0 {
-                    self.cells[i].paths[EAST] = false;
                 } else {
-                    if rng.gen_range(0..=1) == 0 {
+                    if x == self.width - 1 {
                         // Check length of run.
                         // Pick on randomly and erast north.
                         let run_rand_i = rng.gen_range(0..=run_length);
-                        self.cells[i - run_rand_i].paths[NORTH] = false;
+                        self.connect_cells(x - run_rand_i, y, NORTH);
 
                         run_length = 0;
+                    } else if y == 0 {
+                        self.connect_cells(x, y, EAST);
                     } else {
-                        self.cells[i].paths[EAST] = false;
-                        run_length += 1;
+                        if rng.gen_range(0..=1) == 0 {
+                            // Check length of run.
+                            // Pick on randomly and erast north.
+                            let run_rand_i = rng.gen_range(0..=run_length);
+                            self.connect_cells(x - run_rand_i, y, NORTH);
+
+                            run_length = 0;
+                        } else {
+                            self.connect_cells(x, y, EAST);
+                            run_length += 1;
+                        }
                     }
                 }
             }
@@ -238,6 +261,7 @@ fn main() {
 
     let mut maze = Maze::new_full(width, height);
     maze.sidewinder_maze_creation();
+    // maze.binary_tree_maze_creation();
     // maze.dump_ascii();
     maze.dump_image_file(8, 2);
 }
