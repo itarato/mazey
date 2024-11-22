@@ -3,6 +3,11 @@ use std::env::args;
 use draw::{render, shape::LinePoint, Canvas, Color, Drawing, Point, Shape, Style, SvgRenderer};
 use rand::prelude::*;
 
+const NORTH: usize = 0;
+const EAST: usize = 1;
+const SOUTH: usize = 2;
+const WEST: usize = 3;
+
 #[derive(Debug, Default)]
 struct Cell {
     // North > east > south > west.
@@ -60,9 +65,9 @@ impl Maze {
                 if y == 0 && x == self.width - 1 {
                     continue;
                 } else if y == 0 {
-                    self.cells[i].paths[1] = false;
+                    self.cells[i].paths[EAST] = false;
                 } else if x == self.width - 1 {
-                    self.cells[i].paths[0] = false;
+                    self.cells[i].paths[NORTH] = false;
                 } else {
                     self.cells[i].paths[rng.gen_range(0..=1)] = false;
                 }
@@ -87,21 +92,21 @@ impl Maze {
                     // Check length of run.
                     // Pick on randomly and erast north.
                     let run_rand_i = rng.gen_range(0..=run_length);
-                    self.cells[i - run_rand_i].paths[0] = false;
+                    self.cells[i - run_rand_i].paths[NORTH] = false;
 
                     run_length = 0;
                 } else if y == 0 {
-                    self.cells[i].paths[1] = false;
+                    self.cells[i].paths[EAST] = false;
                 } else {
                     if rng.gen_range(0..=1) == 0 {
                         // Check length of run.
                         // Pick on randomly and erast north.
                         let run_rand_i = rng.gen_range(0..=run_length);
-                        self.cells[i - run_rand_i].paths[0] = false;
+                        self.cells[i - run_rand_i].paths[NORTH] = false;
 
                         run_length = 0;
                     } else {
-                        self.cells[i].paths[1] = false;
+                        self.cells[i].paths[EAST] = false;
                         run_length += 1;
                     }
                 }
@@ -116,7 +121,7 @@ impl Maze {
             for x in 0..self.width {
                 let i = y * self.width + x;
 
-                if self.cells[i].paths[0] {
+                if self.cells[i].paths[NORTH] {
                     print!("██");
                 } else {
                     print!(" █");
@@ -128,7 +133,7 @@ impl Maze {
             for x in 0..self.width {
                 let i = y * self.width + x;
 
-                if self.cells[i].paths[1] {
+                if self.cells[i].paths[EAST] {
                     print!(" █");
                 } else {
                     print!("  ");
@@ -168,6 +173,13 @@ impl Maze {
             vec![0f32, 0f32, 0f32, 1f32],
         ];
 
+        let line_ending_adjustment = vec![
+            vec![-1f32, 0f32, 1f32, 0f32],
+            vec![0f32, -1f32, 0f32, 1f32],
+            vec![-1f32, 0f32, 1f32, 0f32],
+            vec![0f32, -1f32, 0f32, 1f32],
+        ];
+
         for y in 0..self.height {
             for x in 0..self.width {
                 let i = y * self.width + x;
@@ -184,13 +196,21 @@ impl Maze {
                         Drawing::new()
                             .with_shape(Shape::Line {
                                 start: Point {
-                                    x: start_x + (cell_size_f32 * line_map[dir][0]),
-                                    y: start_y + (cell_size_f32 * line_map[dir][1]),
+                                    x: start_x
+                                        + (cell_size_f32 * line_map[dir][0])
+                                        + line_ending_adjustment[dir][0],
+                                    y: start_y
+                                        + (cell_size_f32 * line_map[dir][1])
+                                        + line_ending_adjustment[dir][1],
                                 },
                                 points: vec![LinePoint::Straight {
                                     point: Point {
-                                        x: start_x + (cell_size_f32 * line_map[dir][2]),
-                                        y: start_y + (cell_size_f32 * line_map[dir][3]),
+                                        x: start_x
+                                            + (cell_size_f32 * line_map[dir][2])
+                                            + line_ending_adjustment[dir][2],
+                                        y: start_y
+                                            + (cell_size_f32 * line_map[dir][3])
+                                            + line_ending_adjustment[dir][3],
                                     },
                                 }],
                             })
