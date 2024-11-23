@@ -1,6 +1,12 @@
-use std::env::args;
+use std::{
+    collections::{HashSet, VecDeque},
+    env::args,
+    hash::Hash,
+};
 
-use draw::{render, shape::LinePoint, Canvas, Color, Drawing, Point, Shape, Style, SvgRenderer};
+use draw::{
+    render, shape::LinePoint, Canvas, Color, Drawing, Point, Shape, Style, SvgRenderer, RGB,
+};
 use rand::prelude::*;
 
 const NORTH: usize = 0;
@@ -9,6 +15,21 @@ const SOUTH: usize = 2;
 const WEST: usize = 3;
 
 const NEIGHBOUR_MAP: [[i32; 2]; 4] = [[0, -1], [1, 0], [0, 1], [-1, 0]];
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+struct Pair<T>
+where
+    T: Hash,
+{
+    x: T,
+    y: T,
+}
+
+impl<T: Hash> Pair<T> {
+    fn new(x: T, y: T) -> Self {
+        Self { x, y }
+    }
+}
 
 #[derive(Debug, Default)]
 struct Cell {
@@ -26,6 +47,7 @@ impl Cell {
     }
 }
 
+#[derive(Debug)]
 struct Maze {
     width: usize,
     height: usize,
@@ -137,8 +159,134 @@ impl Maze {
         }
     }
 
+    fn dijkstra_path_finding(&self, start: Pair<usize>, finish: Pair<usize>) -> Vec<Pair<usize>> {
+        let mut distance_map: Vec<Vec<i32>> = vec![vec![-1; self.width]; self.height];
+
+        let mut work_queue: VecDeque<Pair<usize>> = VecDeque::new();
+        work_queue.push_back(start);
+        distance_map[start.y][start.x] = 0;
+
+        let mut completed = false;
+
+        while let Some(current_coord) = work_queue.pop_front() {
+            for dir in 0..4 {
+                let neighbour_coord = Pair::new(
+                    current_coord.x as i32 + NEIGHBOUR_MAP[dir][0],
+                    current_coord.y as i32 + NEIGHBOUR_MAP[dir][1],
+                );
+
+                if neighbour_coord.x < 0
+                    || neighbour_coord.y < 0
+                    || neighbour_coord.x >= self.width as i32
+                    || neighbour_coord.y >= self.height as i32
+                {
+                    continue;
+                }
+
+                let current_cell =
+                    &self.cells[(current_coord.y * self.width + current_coord.x) as usize];
+                if current_cell.paths[dir] {
+                    // It's a wall.
+                    continue;
+                }
+
+                let current_distance = distance_map[current_coord.y][current_coord.x];
+                let neighbour_distance =
+                    distance_map[neighbour_coord.y as usize][neighbour_coord.x as usize];
+
+                if neighbour_distance != -1 {
+                    if neighbour_distance > current_distance + 1 {
+                        panic!("This was not suppose to happen with breadth first search.");
+                    }
+                    // Already visited.
+                    continue;
+                }
+
+                distance_map[neighbour_coord.y as usize][neighbour_coord.x as usize] =
+                    current_distance + 1;
+                let neighbour_coord_usize =
+                    Pair::new(neighbour_coord.x as usize, neighbour_coord.y as usize);
+
+                if neighbour_coord_usize == finish {
+                    completed = true;
+                    break;
+                }
+
+                work_queue.push_back(neighbour_coord_usize);
+            }
+
+            if completed {
+                break;
+            }
+        }
+
+        // dbg!(&distance_map);
+
+        // Extract path.
+        let mut current_distance = distance_map[finish.y][finish.x];
+        if current_distance == -1 {
+            panic!("Haven't found path.");
+        }
+
+        let mut path: Vec<Pair<usize>> = vec![];
+        let mut current_coord = finish;
+        let mut found_next;
+
+        path.push(current_coord);
+
+        loop {
+            found_next = false;
+
+            for dir in 0..4 {
+                let neighbour_coord = Pair::new(
+                    current_coord.x as i32 + NEIGHBOUR_MAP[dir][0],
+                    current_coord.y as i32 + NEIGHBOUR_MAP[dir][1],
+                );
+
+                if neighbour_coord.x < 0
+                    || neighbour_coord.y < 0
+                    || neighbour_coord.x >= self.width as i32
+                    || neighbour_coord.y >= self.height as i32
+                {
+                    continue;
+                }
+
+                if distance_map[neighbour_coord.y as usize][neighbour_coord.x as usize]
+                    == current_distance - 1
+                    && !self.cells[current_coord.y * self.width + current_coord.x].paths[dir]
+                {
+                    current_distance -= 1;
+                    current_coord =
+                        Pair::new(neighbour_coord.x as usize, neighbour_coord.y as usize);
+
+                    path.push(current_coord);
+
+                    found_next = true;
+
+                    break;
+                }
+            }
+
+            if current_coord == start {
+                break;
+            }
+
+            if found_next {
+                continue;
+            }
+
+            panic!("Missing previous step.");
+        }
+
+        path.reverse();
+
+        return path;
+    }
+
     #[allow(unused)]
-    fn dump_ascii(&self) {
+    fn dump_ascii(&self, solution: Vec<Pair<usize>>) {
+        let solution_set: HashSet<Pair<usize>> = solution.into_iter().collect();
+
         for y in 0..self.height {
             print!("█");
             for x in 0..self.width {
@@ -156,10 +304,16 @@ impl Maze {
             for x in 0..self.width {
                 let i = y * self.width + x;
 
-                if self.cells[i].paths[EAST] {
-                    print!(" █");
+                if solution_set.contains(&Pair::new(x, y)) {
+                    print!("x");
                 } else {
-                    print!("  ");
+                    print!(" ");
+                }
+
+                if self.cells[i].paths[EAST] {
+                    print!("█");
+                } else {
+                    print!(" ");
                 }
             }
             print!("\n")
@@ -174,7 +328,7 @@ impl Maze {
     }
 
     #[allow(unused)]
-    fn dump_image_file(&self, cell_size: u32, wall_thickness: u32) {
+    fn dump_image_file(&self, cell_size: u32, wall_thickness: u32, solution: Vec<Pair<usize>>) {
         let cell_size_f32 = cell_size as f32;
         let w: u32 = cell_size * self.width as u32;
         let h: u32 = cell_size * self.height as u32;
@@ -243,6 +397,25 @@ impl Maze {
             }
         }
 
+        for i in 0..solution.len() - 1 {
+            canvas.display_list.add(
+                Drawing::new()
+                    .with_shape(Shape::Line {
+                        start: Point {
+                            x: (solution[i].x as f32 + 0.5) * cell_size_f32,
+                            y: (solution[i].y as f32 + 0.5) * cell_size_f32,
+                        },
+                        points: vec![LinePoint::Straight {
+                            point: Point {
+                                x: (solution[i + 1].x as f32 + 0.5) * cell_size_f32,
+                                y: (solution[i + 1].y as f32 + 0.5) * cell_size_f32,
+                            },
+                        }],
+                    })
+                    .with_style(Style::stroked(wall_thickness, RGB::new(200, 40, 40))),
+            );
+        }
+
         render::save(&canvas, "./mazey.svg", SvgRenderer::new()).expect("Image write has failed");
     }
 }
@@ -260,8 +433,15 @@ fn main() {
         .unwrap_or(10);
 
     let mut maze = Maze::new_full(width, height);
+
     maze.sidewinder_maze_creation();
+    // dbg!(&maze);
     // maze.binary_tree_maze_creation();
-    // maze.dump_ascii();
-    maze.dump_image_file(8, 2);
+
+    let solution =
+        maze.dijkstra_path_finding(Pair::new(0, height - 1), Pair::new(width - 1, height - 1));
+    // dbg!(&solution);
+
+    // maze.dump_ascii(solution);
+    maze.dump_image_file(8, 2, solution);
 }
