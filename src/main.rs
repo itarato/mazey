@@ -1,17 +1,21 @@
+mod ascii_drawer;
 mod cell;
 mod flo_drawer;
 mod maze;
 mod maze_builder;
 mod pair;
 mod solver;
+mod svg_drawer;
 mod util;
 
+use ascii_drawer::*;
 use flo_drawer::*;
 use maze::*;
 use maze_builder::*;
 use pair::*;
 use solver::*;
 use std::env::args;
+use svg_drawer::*;
 
 fn main() {
     let args: Vec<String> = args().collect();
