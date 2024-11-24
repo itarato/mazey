@@ -15,11 +15,11 @@ impl<T: Hash> Pair<T> {
     }
 }
 
-impl Pair<usize> {
-    pub fn index(&self, width: usize) -> usize {
-        self.y * width + self.x
-    }
-}
+// impl Pair<usize> {
+//     pub fn index(&self, width: usize) -> usize {
+//         self.y * width + self.x
+//     }
+// }
 
 impl Pair<i32> {
     pub fn index(&self, width: usize) -> usize {

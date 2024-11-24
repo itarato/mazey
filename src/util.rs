@@ -1,7 +1,7 @@
 pub const NORTH: usize = 0;
 pub const EAST: usize = 1;
-pub const SOUTH: usize = 2;
-pub const WEST: usize = 3;
+// pub const SOUTH: usize = 2;
+// pub const WEST: usize = 3;
 
 pub enum CellReachType {
     ReachableOnly,

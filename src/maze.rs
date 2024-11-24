@@ -1,17 +1,13 @@
 use std::collections::HashMap;
 use std::collections::HashSet;
-use std::collections::VecDeque;
 
 use draw::{
     render, shape::LinePoint, Canvas, Color, Drawing, Point, Shape, Style, SvgRenderer, RGB,
 };
-use rand::prelude::*;
 
 use crate::cell::*;
 use crate::pair::*;
 use crate::util::*;
-use rand::seq::SliceRandom;
-use std::cmp::min;
 
 #[derive(Debug)]
 pub struct Maze {
@@ -44,7 +40,7 @@ impl Maze {
         }
     }
 
-    fn connect_cells(&mut self, x: usize, y: usize, dir: usize) {
+    pub fn connect_cells(&mut self, x: usize, y: usize, dir: usize) {
         let i = y * self.width + x;
 
         self.cells[i].paths[dir] = false;
@@ -61,132 +57,7 @@ impl Maze {
         }
     }
 
-    #[allow(unused)]
-    pub fn binary_tree_maze_creation(&mut self) {
-        let mut rng = rand::thread_rng();
-
-        for y in 0..self.height {
-            for x in 0..self.width {
-                if y == 0 && x == self.width - 1 {
-                    continue;
-                } else {
-                    let dir = if y == 0 {
-                        EAST
-                    } else if x == self.width - 1 {
-                        NORTH
-                    } else {
-                        rng.gen_range(0..=1)
-                    };
-
-                    self.connect_cells(x, y, dir);
-                }
-            }
-        }
-    }
-
-    #[allow(unused)]
-    pub fn sidewinder_maze_creation(&mut self) {
-        let mut rng = rand::thread_rng();
-        let mut run_length: usize;
-
-        for y in 0..self.height {
-            run_length = 0;
-
-            for x in 0..self.width {
-                let i = y * self.width + x;
-
-                if y == 0 && x == self.width - 1 {
-                    continue;
-                } else {
-                    if x == self.width - 1 {
-                        // Check length of run.
-                        // Pick on randomly and erast north.
-                        let run_rand_i = rng.gen_range(0..=run_length);
-                        self.connect_cells(x - run_rand_i, y, NORTH);
-
-                        run_length = 0;
-                    } else if y == 0 {
-                        self.connect_cells(x, y, EAST);
-                    } else {
-                        if rng.gen_range(0..=1) == 0 {
-                            // Check length of run.
-                            // Pick on randomly and erast north.
-                            let run_rand_i = rng.gen_range(0..=run_length);
-                            self.connect_cells(x - run_rand_i, y, NORTH);
-
-                            run_length = 0;
-                        } else {
-                            self.connect_cells(x, y, EAST);
-                            run_length += 1;
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    #[allow(unused)]
-    pub fn random_maze_creation(&mut self, start: Pair<usize>) {
-        let mut unreachable_cells: HashSet<Pair<usize>> = HashSet::new();
-        for y in 0..self.height {
-            for x in 0..self.width {
-                unreachable_cells.insert(Pair::new(x, y));
-            }
-        }
-
-        let mut rnd = thread_rng();
-
-        let mut work_queue: VecDeque<Pair<usize>> = VecDeque::new();
-        work_queue.push_back(start);
-        unreachable_cells.remove(&start);
-
-        loop {
-            while let Some(current_coord) = work_queue.pop_back() {
-                let neighbour_coords =
-                    self.neighbours(current_coord, CellReachType::UnreachableOnly);
-                let mut neighbour_dirs = neighbour_coords.keys().collect::<Vec<_>>();
-
-                let used_neighbour_count =
-                    rnd.gen_range(min(1, neighbour_coords.len())..=min(2, neighbour_coords.len()));
-
-                neighbour_dirs.shuffle(&mut rnd);
-                for i in 0..used_neighbour_count {
-                    self.connect_cells(current_coord.x, current_coord.y, *neighbour_dirs[i]);
-                    work_queue.push_back(neighbour_coords[&neighbour_dirs[i]]);
-                    unreachable_cells.remove(&neighbour_coords[&neighbour_dirs[i]]);
-                }
-            }
-
-            // Check for unreachable cells.
-            if unreachable_cells.is_empty() {
-                break;
-            }
-
-            for unreachable_cell in unreachable_cells.clone() {
-                let neighbour_coords =
-                    self.neighbours(unreachable_cell, CellReachType::ReachableOnly);
-
-                if !neighbour_coords.is_empty() {
-                    let random_reachable_neighbour_dir = neighbour_coords.keys().next().unwrap();
-                    self.connect_cells(
-                        unreachable_cell.x,
-                        unreachable_cell.y,
-                        *random_reachable_neighbour_dir,
-                    );
-                    unreachable_cells.remove(&unreachable_cell);
-                    work_queue.push_back(unreachable_cell);
-
-                    break;
-                }
-            }
-
-            if work_queue.is_empty() {
-                panic!("work queue should have a new item");
-            }
-        }
-    }
-
-    fn neighbours(
+    pub fn neighbours(
         &self,
         coord: Pair<usize>,
         reachable_type: CellReachType,
@@ -224,135 +95,6 @@ impl Maze {
         }
 
         neighbour_coords
-    }
-
-    #[allow(unused)]
-    pub fn dijkstra_path_finding(
-        &self,
-        start: Pair<usize>,
-        finish: Pair<usize>,
-    ) -> Vec<Pair<usize>> {
-        let mut distance_map: Vec<Vec<i32>> = vec![vec![-1; self.width]; self.height];
-
-        let mut work_queue: VecDeque<Pair<usize>> = VecDeque::new();
-        work_queue.push_back(start);
-        distance_map[start.y][start.x] = 0;
-
-        let mut completed = false;
-
-        while let Some(current_coord) = work_queue.pop_front() {
-            for dir in 0..4 {
-                let neighbour_coord = Pair::new(
-                    current_coord.x as i32 + NEIGHBOUR_MAP[dir][0],
-                    current_coord.y as i32 + NEIGHBOUR_MAP[dir][1],
-                );
-
-                if neighbour_coord.x < 0
-                    || neighbour_coord.y < 0
-                    || neighbour_coord.x >= self.width as i32
-                    || neighbour_coord.y >= self.height as i32
-                {
-                    continue;
-                }
-
-                let current_cell =
-                    &self.cells[(current_coord.y * self.width + current_coord.x) as usize];
-                if current_cell.paths[dir] {
-                    // It's a wall.
-                    continue;
-                }
-
-                let current_distance = distance_map[current_coord.y][current_coord.x];
-                let neighbour_distance =
-                    distance_map[neighbour_coord.y as usize][neighbour_coord.x as usize];
-
-                if neighbour_distance != -1 {
-                    if neighbour_distance > current_distance + 1 {
-                        panic!("This was not suppose to happen with breadth first search.");
-                    }
-                    // Already visited.
-                    continue;
-                }
-
-                distance_map[neighbour_coord.y as usize][neighbour_coord.x as usize] =
-                    current_distance + 1;
-                let neighbour_coord_usize =
-                    Pair::new(neighbour_coord.x as usize, neighbour_coord.y as usize);
-
-                if neighbour_coord_usize == finish {
-                    completed = true;
-                    break;
-                }
-
-                work_queue.push_back(neighbour_coord_usize);
-            }
-
-            if completed {
-                break;
-            }
-        }
-
-        // dbg!(&distance_map);
-
-        // Extract path.
-        let mut current_distance = distance_map[finish.y][finish.x];
-        if current_distance == -1 {
-            panic!("Haven't found path.");
-        }
-
-        let mut path: Vec<Pair<usize>> = vec![];
-        let mut current_coord = finish;
-        let mut found_next;
-
-        path.push(current_coord);
-
-        loop {
-            found_next = false;
-
-            for dir in 0..4 {
-                let neighbour_coord = Pair::new(
-                    current_coord.x as i32 + NEIGHBOUR_MAP[dir][0],
-                    current_coord.y as i32 + NEIGHBOUR_MAP[dir][1],
-                );
-
-                if neighbour_coord.x < 0
-                    || neighbour_coord.y < 0
-                    || neighbour_coord.x >= self.width as i32
-                    || neighbour_coord.y >= self.height as i32
-                {
-                    continue;
-                }
-
-                if distance_map[neighbour_coord.y as usize][neighbour_coord.x as usize]
-                    == current_distance - 1
-                    && !self.cells[current_coord.y * self.width + current_coord.x].paths[dir]
-                {
-                    current_distance -= 1;
-                    current_coord =
-                        Pair::new(neighbour_coord.x as usize, neighbour_coord.y as usize);
-
-                    path.push(current_coord);
-
-                    found_next = true;
-
-                    break;
-                }
-            }
-
-            if current_coord == start {
-                break;
-            }
-
-            if found_next {
-                continue;
-            }
-
-            panic!("Missing previous step.");
-        }
-
-        path.reverse();
-
-        return path;
     }
 
     #[allow(unused)]
