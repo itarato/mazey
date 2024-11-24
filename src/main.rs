@@ -16,6 +16,11 @@ const EAST: usize = 1;
 const SOUTH: usize = 2;
 const WEST: usize = 3;
 
+enum CellReachType {
+    ReachableOnly,
+    UnreachableOnly,
+}
+
 const NEIGHBOUR_MAP: [[i32; 2]; 4] = [[0, -1], [1, 0], [0, 1], [-1, 0]];
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -182,46 +187,106 @@ impl Maze {
     }
 
     fn random_maze_creation(&mut self, start: Pair<usize>) {
+        let mut unreachable_cells: HashSet<Pair<usize>> = HashSet::new();
+        for y in 0..self.height {
+            for x in 0..self.width {
+                unreachable_cells.insert(Pair::new(x, y));
+            }
+        }
+
         let mut rnd = thread_rng();
 
         let mut work_queue: VecDeque<Pair<usize>> = VecDeque::new();
         work_queue.push_back(start);
+        unreachable_cells.remove(&start);
 
-        while let Some(current_coord) = work_queue.pop_back() {
-            let mut neighbour_coords: HashMap<usize, Pair<usize>> = HashMap::new();
-            let mut neighbour_dirs: Vec<usize> = vec![];
-            for dir in 0..4 {
-                let raw_neighbour_coord = Pair::new(
-                    current_coord.x as i32 + NEIGHBOUR_MAP[dir][0],
-                    current_coord.y as i32 + NEIGHBOUR_MAP[dir][1],
-                );
-                if raw_neighbour_coord.x < 0
-                    || raw_neighbour_coord.y < 0
-                    || raw_neighbour_coord.x >= self.width as i32
-                    || raw_neighbour_coord.y >= self.height as i32
-                {
-                    continue;
+        loop {
+            while let Some(current_coord) = work_queue.pop_back() {
+                let neighbour_coords =
+                    self.neighbours(current_coord, CellReachType::UnreachableOnly);
+                let mut neighbour_dirs = neighbour_coords.keys().collect::<Vec<_>>();
+
+                let used_neighbour_count =
+                    rnd.gen_range(min(1, neighbour_coords.len())..=min(2, neighbour_coords.len()));
+
+                neighbour_dirs.shuffle(&mut rnd);
+                for i in 0..used_neighbour_count {
+                    self.connect_cells(current_coord.x, current_coord.y, *neighbour_dirs[i]);
+                    work_queue.push_back(neighbour_coords[&neighbour_dirs[i]]);
+                    unreachable_cells.remove(&neighbour_coords[&neighbour_dirs[i]]);
                 }
-
-                if self.cells[raw_neighbour_coord.index(self.width)].reachable() {
-                    continue;
-                }
-
-                neighbour_coords.insert(dir, raw_neighbour_coord.to_usize());
-                neighbour_dirs.push(dir);
             }
 
-            let used_neighbour_count =
-                rnd.gen_range(min(1, neighbour_coords.len())..=min(2, neighbour_coords.len()));
+            // Check for unreachable cells.
+            if unreachable_cells.is_empty() {
+                break;
+            }
 
-            neighbour_dirs.shuffle(&mut rnd);
-            for i in 0..used_neighbour_count {
-                self.connect_cells(current_coord.x, current_coord.y, neighbour_dirs[i]);
-                work_queue.push_back(neighbour_coords[&neighbour_dirs[i]]);
+            for unreachable_cell in unreachable_cells.clone() {
+                let neighbour_coords =
+                    self.neighbours(unreachable_cell, CellReachType::ReachableOnly);
+
+                if !neighbour_coords.is_empty() {
+                    let random_reachable_neighbour_dir = neighbour_coords.keys().next().unwrap();
+                    self.connect_cells(
+                        unreachable_cell.x,
+                        unreachable_cell.y,
+                        *random_reachable_neighbour_dir,
+                    );
+                    unreachable_cells.remove(&unreachable_cell);
+                    work_queue.push_back(unreachable_cell);
+
+                    break;
+                }
+            }
+
+            if work_queue.is_empty() {
+                panic!("work queue should have a new item");
             }
         }
     }
 
+    fn neighbours(
+        &self,
+        coord: Pair<usize>,
+        reachable_type: CellReachType,
+    ) -> HashMap<usize, Pair<usize>> {
+        let mut neighbour_coords: HashMap<usize, Pair<usize>> = HashMap::new();
+        let mut neighbour_dirs: Vec<usize> = vec![];
+        for dir in 0..4 {
+            let raw_neighbour_coord = Pair::new(
+                coord.x as i32 + NEIGHBOUR_MAP[dir][0],
+                coord.y as i32 + NEIGHBOUR_MAP[dir][1],
+            );
+            if raw_neighbour_coord.x < 0
+                || raw_neighbour_coord.y < 0
+                || raw_neighbour_coord.x >= self.width as i32
+                || raw_neighbour_coord.y >= self.height as i32
+            {
+                continue;
+            }
+
+            match reachable_type {
+                CellReachType::ReachableOnly => {
+                    if !self.cells[raw_neighbour_coord.index(self.width)].reachable() {
+                        continue;
+                    }
+                }
+                CellReachType::UnreachableOnly => {
+                    if self.cells[raw_neighbour_coord.index(self.width)].reachable() {
+                        continue;
+                    }
+                }
+            }
+
+            neighbour_coords.insert(dir, raw_neighbour_coord.to_usize());
+            neighbour_dirs.push(dir);
+        }
+
+        neighbour_coords
+    }
+
+    #[allow(unused)]
     fn dijkstra_path_finding(&self, start: Pair<usize>, finish: Pair<usize>) -> Vec<Pair<usize>> {
         let mut distance_map: Vec<Vec<i32>> = vec![vec![-1; self.width]; self.height];
 
@@ -504,10 +569,9 @@ fn main() {
     // dbg!(&maze);
     // maze.binary_tree_maze_creation();
 
-    // let solution =
-    //     maze.dijkstra_path_finding(Pair::new(0, height - 1), Pair::new(width - 1, height - 1));
+    let solution = maze.dijkstra_path_finding(Pair::new(0, 0), Pair::new(width - 1, height - 1));
     // dbg!(&solution);
 
     // maze.dump_ascii(solution);
-    maze.dump_image_file(8, 2, vec![]);
+    maze.dump_image_file(8, 2, solution);
 }
