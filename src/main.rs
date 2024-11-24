@@ -1,5 +1,6 @@
 use std::{
-    collections::{HashSet, VecDeque},
+    cmp::min,
+    collections::{HashMap, HashSet, VecDeque},
     env::args,
     hash::Hash,
 };
@@ -8,6 +9,7 @@ use draw::{
     render, shape::LinePoint, Canvas, Color, Drawing, Point, Shape, Style, SvgRenderer, RGB,
 };
 use rand::prelude::*;
+use rand::seq::SliceRandom;
 
 const NORTH: usize = 0;
 const EAST: usize = 1;
@@ -31,6 +33,22 @@ impl<T: Hash> Pair<T> {
     }
 }
 
+impl Pair<usize> {
+    fn index(&self, width: usize) -> usize {
+        self.y * width + self.x
+    }
+}
+
+impl Pair<i32> {
+    fn index(&self, width: usize) -> usize {
+        self.y as usize * width + self.x as usize
+    }
+
+    fn to_usize(&self) -> Pair<usize> {
+        Pair::new(self.x as usize, self.y as usize)
+    }
+}
+
 #[derive(Debug, Default)]
 struct Cell {
     // North > east > south > west.
@@ -44,6 +62,10 @@ impl Cell {
 
     fn new_full() -> Cell {
         Cell { paths: [true; 4] }
+    }
+
+    fn reachable(&self) -> bool {
+        !self.paths[0] || !self.paths[1] || !self.paths[2] || !self.paths[3]
     }
 }
 
@@ -155,6 +177,47 @@ impl Maze {
                         }
                     }
                 }
+            }
+        }
+    }
+
+    fn random_maze_creation(&mut self, start: Pair<usize>) {
+        let mut rnd = thread_rng();
+
+        let mut work_queue: VecDeque<Pair<usize>> = VecDeque::new();
+        work_queue.push_back(start);
+
+        while let Some(current_coord) = work_queue.pop_back() {
+            let mut neighbour_coords: HashMap<usize, Pair<usize>> = HashMap::new();
+            let mut neighbour_dirs: Vec<usize> = vec![];
+            for dir in 0..4 {
+                let raw_neighbour_coord = Pair::new(
+                    current_coord.x as i32 + NEIGHBOUR_MAP[dir][0],
+                    current_coord.y as i32 + NEIGHBOUR_MAP[dir][1],
+                );
+                if raw_neighbour_coord.x < 0
+                    || raw_neighbour_coord.y < 0
+                    || raw_neighbour_coord.x >= self.width as i32
+                    || raw_neighbour_coord.y >= self.height as i32
+                {
+                    continue;
+                }
+
+                if self.cells[raw_neighbour_coord.index(self.width)].reachable() {
+                    continue;
+                }
+
+                neighbour_coords.insert(dir, raw_neighbour_coord.to_usize());
+                neighbour_dirs.push(dir);
+            }
+
+            let used_neighbour_count =
+                rnd.gen_range(min(1, neighbour_coords.len())..=min(2, neighbour_coords.len()));
+
+            neighbour_dirs.shuffle(&mut rnd);
+            for i in 0..used_neighbour_count {
+                self.connect_cells(current_coord.x, current_coord.y, neighbour_dirs[i]);
+                work_queue.push_back(neighbour_coords[&neighbour_dirs[i]]);
             }
         }
     }
@@ -397,23 +460,25 @@ impl Maze {
             }
         }
 
-        for i in 0..solution.len() - 1 {
-            canvas.display_list.add(
-                Drawing::new()
-                    .with_shape(Shape::Line {
-                        start: Point {
-                            x: (solution[i].x as f32 + 0.5) * cell_size_f32,
-                            y: (solution[i].y as f32 + 0.5) * cell_size_f32,
-                        },
-                        points: vec![LinePoint::Straight {
-                            point: Point {
-                                x: (solution[i + 1].x as f32 + 0.5) * cell_size_f32,
-                                y: (solution[i + 1].y as f32 + 0.5) * cell_size_f32,
+        if !solution.is_empty() {
+            for i in 0..solution.len() - 1 {
+                canvas.display_list.add(
+                    Drawing::new()
+                        .with_shape(Shape::Line {
+                            start: Point {
+                                x: (solution[i].x as f32 + 0.5) * cell_size_f32,
+                                y: (solution[i].y as f32 + 0.5) * cell_size_f32,
                             },
-                        }],
-                    })
-                    .with_style(Style::stroked(wall_thickness, RGB::new(200, 40, 40))),
-            );
+                            points: vec![LinePoint::Straight {
+                                point: Point {
+                                    x: (solution[i + 1].x as f32 + 0.5) * cell_size_f32,
+                                    y: (solution[i + 1].y as f32 + 0.5) * cell_size_f32,
+                                },
+                            }],
+                        })
+                        .with_style(Style::stroked(wall_thickness, RGB::new(200, 40, 40))),
+                );
+            }
         }
 
         render::save(&canvas, "./mazey.svg", SvgRenderer::new()).expect("Image write has failed");
@@ -434,14 +499,15 @@ fn main() {
 
     let mut maze = Maze::new_full(width, height);
 
-    maze.sidewinder_maze_creation();
+    maze.random_maze_creation(Pair::new(0, 0));
+    // maze.sidewinder_maze_creation();
     // dbg!(&maze);
     // maze.binary_tree_maze_creation();
 
-    let solution =
-        maze.dijkstra_path_finding(Pair::new(0, height - 1), Pair::new(width - 1, height - 1));
+    // let solution =
+    //     maze.dijkstra_path_finding(Pair::new(0, height - 1), Pair::new(width - 1, height - 1));
     // dbg!(&solution);
 
     // maze.dump_ascii(solution);
-    maze.dump_image_file(8, 2, solution);
+    maze.dump_image_file(8, 2, vec![]);
 }
