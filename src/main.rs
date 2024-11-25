@@ -8,14 +8,12 @@ mod solver;
 mod svg_drawer;
 mod util;
 
-use ascii_drawer::*;
 use flo_drawer::*;
 use maze::*;
 use maze_builder::*;
 use pair::*;
 use solver::*;
 use std::env::args;
-use svg_drawer::*;
 
 fn main() {
     let args: Vec<String> = args().collect();
@@ -47,5 +45,5 @@ fn main() {
     // maze.dump_image_file(8, 2, solution);
 
     let flo_drawer_instance = FloDrawer::new();
-    flo_drawer_instance.draw(maze);
+    flo_drawer_instance.draw(maze, solution);
 }
