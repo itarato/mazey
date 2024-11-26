@@ -30,20 +30,14 @@ fn main() {
     let mut maze = Maze::new_full(width, height);
 
     MazeBuilder::random_maze_creation(&mut maze, Pair::new(0, 0));
-    // maze.sidewinder_maze_creation();
-    // dbg!(&maze);
-    // maze.binary_tree_maze_creation();
 
     let solution = Solver::dijkstra_path_finding_solver(
         &maze,
         Pair::new(0, 0),
         Pair::new(width - 1, height - 1),
     );
-    // dbg!(&solution);
-
-    // maze.dump_ascii(solution);
-    // maze.dump_image_file(8, 2, solution);
+    let (max_distance, distance_map) = Solver::build_distance_map(&maze, Pair::new(0, 0));
 
     let flo_drawer_instance = FloDrawer::new();
-    flo_drawer_instance.draw(maze, solution);
+    flo_drawer_instance.draw(maze, solution, max_distance, distance_map);
 }
