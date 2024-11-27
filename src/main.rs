@@ -31,8 +31,9 @@ fn main() {
     let start = Pair::new(0, 0);
     let finish = Pair::new(width - 1, height - 1);
 
-    // MazeBuilder::random_maze_creation(&mut maze, start);
-    MazeBuilder::aldous_broder_maze_creation(&mut maze, start);
+    MazeBuilder::random_maze_creation(&mut maze, start);
+    // MazeBuilder::aldous_broder_maze_creation(&mut maze, start);
+    // MazeBuilder::wilson_maze_creation(&mut maze, start);
 
     let solution = Solver::dijkstra_path_finding_solver(&maze, start, finish);
     let (max_distance, distance_map) = Solver::build_distance_map(&maze, start);

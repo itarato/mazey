@@ -151,6 +151,7 @@ impl MazeBuilder {
         }
     }
 
+    #[allow(unused)]
     pub fn wilson_maze_creation(maze: &mut Maze, start: Coord) {
         let mut unreachable_cells = MazeBuilder::generate_unreachable_cells(maze);
 
@@ -160,6 +161,8 @@ impl MazeBuilder {
 
         while !unreachable_cells.is_empty() {
             let mut path: Vec<Coord> = vec![];
+            // `origin_dirs` strictly follows `path` and only starts with the 2nd item from it (origin did not come from a direction).
+            let mut origin_dirs: Vec<usize> = vec![];
 
             let unreachable_cell_list = unreachable_cells.clone().into_iter().collect::<Vec<_>>();
             let random_unreachable_cell_index =
@@ -174,31 +177,36 @@ impl MazeBuilder {
                 let random_neighbour_dir = neighbours.keys().nth(random_neighbour_index).unwrap();
 
                 let random_neighbour = neighbours[random_neighbour_dir];
+                current_cell = random_neighbour;
                 if path.contains(&random_neighbour) {
                     // Revert `path` until the next `random_neighbour`.
                     while path.last().unwrap() != &random_neighbour {
                         path.pop();
+                        origin_dirs.pop();
                     }
-
-                    current_cell = random_neighbour;
 
                     continue;
                 }
 
+                path.push(random_neighbour);
+                origin_dirs.push(*random_neighbour_dir);
+
                 let random_neighbour_cell = maze.cell_at(random_neighbour);
                 if random_neighbour_cell.reachable() {
-                    // Merge path into `random_neighbour_cell`.
-                    path.push(random_neighbour);
-
                     break;
                 }
-
-                path.push(random_neighbour);
-                current_cell = random_neighbour;
             }
 
             // Merge path.
-            todo!();
+            while path.len() > 1 {
+                let coord_from = path.pop().unwrap();
+                let dir_to = (origin_dirs.pop().unwrap() + 2) % 4;
+
+                maze.connect_cells(coord_from.x, coord_from.y, dir_to);
+
+                unreachable_cells.remove(&coord_from);
+            }
+            unreachable_cells.remove(&path.pop().unwrap());
         }
     }
 

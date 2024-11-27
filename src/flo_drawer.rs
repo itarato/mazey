@@ -97,7 +97,7 @@ impl FloDrawer {
 
                 // Solution.
                 if !solution.is_empty() {
-                    gc.stroke_color(Color::Rgba(1.0, 7.0, 0.0, 1.0));
+                    gc.stroke_color(Color::Rgba(1.0, 0.4, 0.1, 1.0));
                     for i in 0..solution.len() - 1 {
                         gc.move_to(
                             (solution[i].x as f32 + 0.5) * CELL_SIZE,
