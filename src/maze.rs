@@ -34,6 +34,18 @@ impl Maze {
         }
     }
 
+    pub fn cell_at(&self, coord: Pair<usize>) -> &Cell {
+        self.cells
+            .get(coord.index(self.width))
+            .expect("Cell not found")
+    }
+
+    pub fn cell_at_mut(&mut self, coord: Pair<usize>) -> &mut Cell {
+        self.cells
+            .get_mut(coord.index(self.width))
+            .expect("Cell not found")
+    }
+
     pub fn connect_cells(&mut self, x: usize, y: usize, dir: usize) {
         let i = y * self.width + x;
 
@@ -82,6 +94,7 @@ impl Maze {
                         continue;
                     }
                 }
+                CellReachType::Anything => {}
             }
 
             neighbour_coords.insert(dir, raw_neighbour_coord.to_usize());

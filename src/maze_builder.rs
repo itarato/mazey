@@ -75,17 +75,12 @@ impl MazeBuilder {
     }
 
     #[allow(unused)]
-    pub fn random_maze_creation(maze: &mut Maze, start: Pair<usize>) {
-        let mut unreachable_cells: HashSet<Pair<usize>> = HashSet::new();
-        for y in 0..maze.height {
-            for x in 0..maze.width {
-                unreachable_cells.insert(Pair::new(x, y));
-            }
-        }
+    pub fn random_maze_creation(maze: &mut Maze, start: Coord) {
+        let mut unreachable_cells: HashSet<Coord> = MazeBuilder::generate_unreachable_cells(maze);
 
         let mut rnd = thread_rng();
 
-        let mut work_queue: VecDeque<Pair<usize>> = VecDeque::new();
+        let mut work_queue: VecDeque<Coord> = VecDeque::new();
         work_queue.push_back(start);
         unreachable_cells.remove(&start);
 
@@ -133,5 +128,87 @@ impl MazeBuilder {
                 panic!("work queue should have a new item");
             }
         }
+    }
+
+    pub fn aldous_broder_maze_creation(maze: &mut Maze, start: Coord) {
+        let mut unreachable_cells: HashSet<Coord> = MazeBuilder::generate_unreachable_cells(maze);
+
+        unreachable_cells.remove(&start);
+        let mut current_cell = start;
+
+        while !unreachable_cells.is_empty() {
+            let neighbours = maze.neighbours(current_cell, CellReachType::Anything);
+            let dirs = neighbours.keys().collect::<Vec<_>>();
+            let random_dir = *dirs[thread_rng().gen_range(0..dirs.len())];
+            let random_neighbour = neighbours[&random_dir];
+
+            if !maze.cells[random_neighbour.index(maze.width)].reachable() {
+                maze.connect_cells(current_cell.x, current_cell.y, random_dir);
+            }
+
+            current_cell = random_neighbour;
+            unreachable_cells.remove(&current_cell);
+        }
+    }
+
+    pub fn wilson_maze_creation(maze: &mut Maze, start: Coord) {
+        let mut unreachable_cells = MazeBuilder::generate_unreachable_cells(maze);
+
+        maze.cell_at_mut(start).mark_reached();
+
+        unreachable_cells.remove(&start);
+
+        while !unreachable_cells.is_empty() {
+            let mut path: Vec<Coord> = vec![];
+
+            let unreachable_cell_list = unreachable_cells.clone().into_iter().collect::<Vec<_>>();
+            let random_unreachable_cell_index =
+                thread_rng().gen_range(0..unreachable_cell_list.len());
+            let mut current_cell = unreachable_cell_list[random_unreachable_cell_index];
+
+            path.push(current_cell);
+
+            loop {
+                let neighbours = maze.neighbours(current_cell, CellReachType::Anything);
+                let random_neighbour_index = thread_rng().gen_range(0..neighbours.len());
+                let random_neighbour_dir = neighbours.keys().nth(random_neighbour_index).unwrap();
+
+                let random_neighbour = neighbours[random_neighbour_dir];
+                if path.contains(&random_neighbour) {
+                    // Revert `path` until the next `random_neighbour`.
+                    while path.last().unwrap() != &random_neighbour {
+                        path.pop();
+                    }
+
+                    current_cell = random_neighbour;
+
+                    continue;
+                }
+
+                let random_neighbour_cell = maze.cell_at(random_neighbour);
+                if random_neighbour_cell.reachable() {
+                    // Merge path into `random_neighbour_cell`.
+                    path.push(random_neighbour);
+
+                    break;
+                }
+
+                path.push(random_neighbour);
+                current_cell = random_neighbour;
+            }
+
+            // Merge path.
+            todo!();
+        }
+    }
+
+    fn generate_unreachable_cells(maze: &Maze) -> HashSet<Coord> {
+        let mut unreachable_cells: HashSet<Coord> = HashSet::new();
+        for y in 0..maze.height {
+            for x in 0..maze.width {
+                unreachable_cells.insert(Pair::new(x, y));
+            }
+        }
+        unreachable_cells
     }
 }

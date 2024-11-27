@@ -45,9 +45,9 @@ impl FloDrawer {
                         let distance_intensity =
                             (max_distance - distance_map[y][x]) as f32 / max_distance as f32;
                         gc.fill_color(Color::Rgba(
-                            distance_intensity,
-                            distance_intensity,
-                            0.0,
+                            distance_intensity / 5.0,
+                            distance_intensity / 1.2,
+                            distance_intensity / 5.0,
                             1.0,
                         ));
                         gc.rect(
@@ -60,7 +60,7 @@ impl FloDrawer {
                     }
                 }
 
-                gc.stroke_color(Color::Rgba(0.2, 0.5, 0.8, 1.0));
+                gc.stroke_color(Color::Rgba(0.5, 0.6, 0.7, 1.0));
                 gc.line_width(LINE_WIDTH);
                 gc.line_cap(LineCap::Round);
 
@@ -97,7 +97,7 @@ impl FloDrawer {
 
                 // Solution.
                 if !solution.is_empty() {
-                    gc.stroke_color(Color::Rgba(0.6, 0.1, 0.2, 1.0));
+                    gc.stroke_color(Color::Rgba(1.0, 7.0, 0.0, 1.0));
                     for i in 0..solution.len() - 1 {
                         gc.move_to(
                             (solution[i].x as f32 + 0.5) * CELL_SIZE,
