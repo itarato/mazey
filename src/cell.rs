@@ -1,4 +1,4 @@
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Clone)]
 pub struct Cell {
     // North > east > south > west.
     pub paths: [bool; 4],

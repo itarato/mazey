@@ -106,6 +106,7 @@ impl MazeBuilder {
                 break;
             }
 
+            // Find an unreachable that has at least one reachable neighbour. Connect it and start a new random walk.
             for unreachable_cell in unreachable_cells.clone() {
                 let neighbour_coords =
                     maze.neighbours(unreachable_cell, CellReachType::ReachableOnly);

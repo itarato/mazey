@@ -1,5 +1,6 @@
 mod ascii_drawer;
 mod cell;
+mod circle_maze;
 mod flo_drawer;
 mod maze;
 mod maze_builder;
@@ -8,6 +9,7 @@ mod solver;
 mod svg_drawer;
 mod util;
 
+use circle_maze::CircleMaze;
 use flo_drawer::*;
 use maze::*;
 use maze_builder::*;
@@ -15,7 +17,7 @@ use pair::*;
 use solver::*;
 use std::env::args;
 
-fn main() {
+fn maze_example() {
     let args: Vec<String> = args().collect();
 
     let width = args
@@ -31,13 +33,20 @@ fn main() {
     let start = Pair::new(0, 0);
     let finish = Pair::new(width - 1, height - 1);
 
-    MazeBuilder::random_maze_creation(&mut maze, start);
+    // MazeBuilder::random_maze_creation(&mut maze, start);
     // MazeBuilder::aldous_broder_maze_creation(&mut maze, start);
     // MazeBuilder::wilson_maze_creation(&mut maze, start);
 
     let solution = Solver::dijkstra_path_finding_solver(&maze, start, finish);
     let (max_distance, distance_map) = Solver::build_distance_map(&maze, start);
 
-    let flo_drawer_instance = FloDrawer::new();
-    flo_drawer_instance.draw(maze, solution, max_distance, distance_map);
+    FloDrawer::draw(maze, solution, max_distance, distance_map);
+}
+
+fn main() {
+    let mut circle_maze = CircleMaze::new(12);
+    // for i in 0..12 {
+    //     dbg!(circle_maze.cells[i].len());
+    // }
+    FloDrawer::draw_circle_maze(circle_maze);
 }

@@ -3,7 +3,7 @@ use flo_draw::{
     create_drawing_window, with_2d_graphics,
 };
 
-use crate::{Maze, Pair};
+use crate::{circle_maze::CircleMaze, Maze, Pair};
 
 pub struct FloDrawer;
 
@@ -18,12 +18,7 @@ const LINE_MAP: [[f32; 4]; 4] = [
 ];
 
 impl FloDrawer {
-    pub fn new() -> FloDrawer {
-        FloDrawer
-    }
-
     pub fn draw(
-        &self,
         maze: Maze,
         solution: Vec<Pair<usize>>,
         max_distance: i32,
@@ -108,6 +103,71 @@ impl FloDrawer {
                             (solution[i + 1].y as f32 + 0.5) * CELL_SIZE,
                         );
                         gc.stroke();
+                    }
+                }
+            });
+        });
+    }
+
+    pub fn draw_circle_maze(maze: CircleMaze) {
+        with_2d_graphics(move || {
+            let canvas = create_drawing_window("Mazey");
+
+            let w = 1024.0;
+            let h = 1024.0;
+
+            let offset_x = w / 2.0;
+            let offset_y = h / 2.0;
+
+            canvas.draw(|gc| {
+                gc.clear_canvas(Color::Rgba(0.1, 0.1, 0.1, 1.0));
+                gc.canvas_height(h + (MAZE_PADDING * 2.0));
+                gc.center_region(0.0, -MAZE_PADDING, w, h + MAZE_PADDING);
+
+                gc.stroke_color(Color::Rgba(1.0, 0.8, 0.6, 1.0));
+                gc.line_width(LINE_WIDTH);
+                gc.line_cap(LineCap::Round);
+
+                let level_height = 30.0f32;
+
+                for h in 0..maze.height {
+                    let r = (h as f32 + 0.5) * level_height;
+                    let cell_count = if h == maze.height - 1 {
+                        maze.cells[h].len()
+                    } else {
+                        maze.cells[h + 1].len()
+                    };
+
+                    for i in 0..cell_count {
+                        // "Top" line start.
+                        let alpha_from = (360.0 / cell_count as f32) * i as f32;
+                        let alpha_from_rad = (alpha_from / 180.0) * std::f32::consts::PI;
+                        let beta_from_rad = ((90.0 - alpha_from) / 180.0) * std::f32::consts::PI;
+                        let x_from = r * alpha_from_rad.sin();
+                        let y_from = r * beta_from_rad.sin();
+                        gc.move_to(x_from + offset_x, y_from + offset_y);
+
+                        // "Top" line finish.
+                        let alpha_to = (360.0 / cell_count as f32) * (i + 1) as f32;
+                        let alpha_to_rad = (alpha_to / 180.0) * std::f32::consts::PI;
+                        let beta_to_rad = ((90.0 - alpha_to) / 180.0) * std::f32::consts::PI;
+                        let x_to = r * alpha_to_rad.sin();
+                        let y_to = r * beta_to_rad.sin();
+                        gc.line_to(x_to + offset_x, y_to + offset_y);
+                        gc.stroke();
+
+                        // "Side" (left) wall.
+                        if h > 0 {
+                            // Outer end.
+                            gc.move_to(x_from + offset_x, y_from + offset_y);
+
+                            // Inner end.
+                            let r_inner = (h as f32 - 0.5) * level_height;
+                            let x_to = r_inner * alpha_from_rad.sin();
+                            let y_to = r_inner * beta_from_rad.sin();
+                            gc.line_to(x_to + offset_x, y_to + offset_y);
+                            gc.stroke();
+                        }
                     }
                 }
             });
