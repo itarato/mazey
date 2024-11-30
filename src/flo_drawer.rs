@@ -126,7 +126,6 @@ impl FloDrawer {
 
                 gc.stroke_color(Color::Rgba(1.0, 0.8, 0.6, 1.0));
                 gc.line_width(LINE_WIDTH);
-                // gc.line_cap(LineCap::Round);
 
                 let level_height = 40.0f32;
 
@@ -145,7 +144,6 @@ impl FloDrawer {
                         let beta_from_rad = ((90.0 - alpha_from) / 180.0) * std::f32::consts::PI;
                         let x_from = r * alpha_from_rad.sin();
                         let y_from = r * beta_from_rad.sin();
-                        gc.move_to(x_from + offset_x, y_from + offset_y);
 
                         // "Top" line finish.
                         let alpha_to = (360.0 / cell_count as f32) * (i + 1) as f32;
@@ -153,18 +151,20 @@ impl FloDrawer {
                         let beta_to_rad = ((90.0 - alpha_to) / 180.0) * std::f32::consts::PI;
                         let x_to = r * alpha_to_rad.sin();
                         let y_to = r * beta_to_rad.sin();
+
+                        gc.move_to(x_from + offset_x, y_from + offset_y);
                         gc.line_to(x_to + offset_x, y_to + offset_y);
                         gc.stroke();
 
                         // "Side" (left) wall.
                         if h < maze.height - 1 {
-                            // Outer end.
-                            gc.move_to(x_from + offset_x, y_from + offset_y);
-
                             // Inner end.
                             let r_inner = (h as f32 + 1.5) * level_height;
                             let x_to = r_inner * alpha_from_rad.sin();
                             let y_to = r_inner * beta_from_rad.sin();
+
+                            // Outer end.
+                            gc.move_to(x_from + offset_x, y_from + offset_y);
                             gc.line_to(x_to + offset_x, y_to + offset_y);
                             gc.stroke();
                         }

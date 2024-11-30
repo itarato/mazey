@@ -46,6 +46,7 @@ fn maze_example() {
 
 fn main() {
     let mut circle_maze = CircleMaze::new(12);
+    dbg!(circle_maze.neighbours(Pair::new(0, 4)));
     for i in 0..12 {
         dbg!(circle_maze.cells[i].len());
         // dbg!(circle_maze.cells[i][0].paths.len());

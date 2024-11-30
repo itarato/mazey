@@ -23,6 +23,7 @@ impl Maze {
         }
     }
 
+    #[allow(unused)]
     pub fn new_full(width: usize, height: usize) -> Maze {
         let mut cells: Vec<Cell> = vec![];
         cells.resize_with(width * height, Cell::new_full);
