@@ -46,22 +46,7 @@ fn maze_example() {
 }
 
 fn main() {
-    let mut circle_maze = CircleMaze::new(12);
-    // dbg!(circle_maze.neighbours(Pair::new(0, 4)));
-
-    // circle_maze.connect_cells(
-    //     Pair::new(1, 1),
-    //     circle_maze_cell::CircleMazeCellDirection::South,
-    // );
-    // circle_maze.connect_cells(
-    //     Pair::new(1, 2),
-    //     circle_maze_cell::CircleMazeCellDirection::East,
-    // );
-
-    // for i in 0..12 {
-    //     dbg!(circle_maze.cells[i].len());
-    //     // dbg!(circle_maze.cells[i][0].paths.len());
-    // }
+    let mut circle_maze = CircleMaze::new(32);
     let start = Pair::new(0, 0);
     MazeBuilder::random_circle_maze_creation(&mut circle_maze, start);
     FloDrawer::draw_circle_maze(circle_maze);

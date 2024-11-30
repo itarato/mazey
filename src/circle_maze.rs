@@ -20,7 +20,7 @@ impl CircleMaze {
 
         let level_height = 30.0;
         let mut current_cell_count = STARTER_CELL_SIDES;
-        let cell_arc = 30.0;
+        let cell_arc = 20.0;
 
         let mut cell_counts = vec![1];
 

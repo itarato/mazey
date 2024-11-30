@@ -114,8 +114,9 @@ impl FloDrawer {
         with_2d_graphics(move || {
             let canvas = create_drawing_window("Mazey");
 
-            let w = 1024.0;
-            let h = 1024.0;
+            let level_height = 40.0f32;
+            let w = level_height * (maze.height as f32 * 2.0 - 1.0);
+            let h = w;
 
             let offset_x = w / 2.0;
             let offset_y = h / 2.0;
@@ -128,8 +129,6 @@ impl FloDrawer {
                 gc.stroke_color(Color::Rgba(1.0, 0.8, 0.6, 1.0));
                 gc.line_width(LINE_WIDTH);
                 gc.line_cap(LineCap::Round);
-
-                let level_height = 40.0f32;
 
                 for h in 0..maze.height {
                     let r = (h as f32 + 0.5) * level_height;
