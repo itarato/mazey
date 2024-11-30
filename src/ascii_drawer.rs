@@ -3,9 +3,11 @@ use std::collections::HashSet;
 use crate::util::*;
 use crate::{Maze, Pair};
 
+#[allow(unused)]
 pub struct AsciiDrawer;
 
 impl AsciiDrawer {
+    #[allow(unused)]
     pub fn draw(maze: &Maze, solution: Vec<Pair<usize>>) {
         let solution_set: HashSet<Pair<usize>> = solution.into_iter().collect();
 

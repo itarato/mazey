@@ -33,7 +33,10 @@ impl CircleMazeCell {
             CircleMazeCellDirection::East => !self.paths[0],
             CircleMazeCellDirection::South => !self.paths[1],
             CircleMazeCellDirection::West => !self.paths[2],
-            CircleMazeCellDirection::North(n) => !self.paths[3 + n],
+            CircleMazeCellDirection::North(n) => {
+                let i = if self.has_default_paths { 3 } else { 0 };
+                !self.paths[i + n]
+            }
         }
     }
 
@@ -44,7 +47,10 @@ impl CircleMazeCell {
             CircleMazeCellDirection::East => self.paths[0] = false,
             CircleMazeCellDirection::South => self.paths[1] = false,
             CircleMazeCellDirection::West => self.paths[2] = false,
-            CircleMazeCellDirection::North(n) => self.paths[3 + n] = false,
+            CircleMazeCellDirection::North(n) => {
+                let i = if self.has_default_paths { 3 } else { 0 };
+                self.paths[i + n] = false
+            }
         };
     }
 

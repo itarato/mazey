@@ -18,6 +18,7 @@ const LINE_MAP: [[f32; 4]; 4] = [
 ];
 
 impl FloDrawer {
+    #[allow(unused)]
     pub fn draw(
         maze: Maze,
         solution: Vec<Pair<usize>>,

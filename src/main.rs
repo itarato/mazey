@@ -18,6 +18,7 @@ use pair::*;
 use solver::*;
 use std::env::args;
 
+#[allow(unused)]
 fn maze_example() {
     let args: Vec<String> = args().collect();
 
@@ -61,5 +62,7 @@ fn main() {
     //     dbg!(circle_maze.cells[i].len());
     //     // dbg!(circle_maze.cells[i][0].paths.len());
     // }
+    let start = Pair::new(0, 0);
+    MazeBuilder::random_circle_maze_creation(&mut circle_maze, start);
     FloDrawer::draw_circle_maze(circle_maze);
 }

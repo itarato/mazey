@@ -173,7 +173,7 @@ impl CircleMaze {
 
         unfiltered_neighbours
             .into_iter()
-            .filter(|(dir, coord)| match reach_type {
+            .filter(|(_dir, coord)| match reach_type {
                 CellReachType::Anything => true,
                 CellReachType::ReachableOnly => self.cell_at(*coord).reachable(),
                 CellReachType::UnreachableOnly => !self.cell_at(*coord).reachable(),

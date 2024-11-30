@@ -6,6 +6,7 @@ use crate::{Maze, Pair};
 pub struct Solver;
 
 impl Solver {
+    #[allow(unused)]
     pub fn build_distance_map(maze: &Maze, start: Pair<usize>) -> (i32, Vec<Vec<i32>>) {
         let mut distance_map: Vec<Vec<i32>> = vec![vec![-1; maze.width]; maze.height];
         let mut max_distance = 0;
