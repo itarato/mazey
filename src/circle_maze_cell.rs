@@ -1,4 +1,4 @@
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum CircleMazeCellDirection {
     North(usize),
     East,
@@ -46,5 +46,9 @@ impl CircleMazeCell {
             CircleMazeCellDirection::West => self.paths[2] = false,
             CircleMazeCellDirection::North(n) => self.paths[3 + n] = false,
         };
+    }
+
+    pub fn reachable(&self) -> bool {
+        self.paths.iter().any(|wall| !*wall)
     }
 }

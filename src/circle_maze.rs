@@ -1,7 +1,11 @@
 use core::f32;
 use std::collections::HashMap;
 
-use crate::{circle_maze_cell::*, util::Coord, Pair};
+use crate::{
+    circle_maze_cell::*,
+    util::{CellReachType, Coord},
+    Pair,
+};
 
 const STARTER_CELL_SIDES: usize = 6;
 
@@ -126,18 +130,22 @@ impl CircleMaze {
         opposite_cell.open(opposite_dir);
     }
 
-    pub fn neighbours(&self, coord: Coord) -> HashMap<CircleMazeCellDirection, Coord> {
-        let mut out = HashMap::new();
+    pub fn neighbours(
+        &self,
+        coord: Coord,
+        reach_type: CellReachType,
+    ) -> HashMap<CircleMazeCellDirection, Coord> {
+        let mut unfiltered_neighbours = HashMap::new();
         let current_row_len = self.cells[coord.y].len();
 
         let current_cell = self.cell_at(coord);
 
         if current_cell.has_default_paths {
-            out.insert(
+            unfiltered_neighbours.insert(
                 CircleMazeCellDirection::East,
                 Pair::new((coord.x + 1) % current_row_len, coord.y),
             );
-            out.insert(
+            unfiltered_neighbours.insert(
                 CircleMazeCellDirection::West,
                 Pair::new((coord.x + current_row_len - 1) % current_row_len, coord.y),
             );
@@ -145,7 +153,7 @@ impl CircleMaze {
             let lower_row_len = self.cells[coord.y - 1].len();
             let cell_row_scale_diff = current_row_len / lower_row_len;
 
-            out.insert(
+            unfiltered_neighbours.insert(
                 CircleMazeCellDirection::South,
                 Pair::new(coord.x / cell_row_scale_diff, coord.y - 1),
             );
@@ -156,13 +164,20 @@ impl CircleMaze {
                 let upper_row_len = self.cells[coord.y + 1].len();
                 let cell_row_scale_diff = upper_row_len / current_row_len;
 
-                out.insert(
+                unfiltered_neighbours.insert(
                     CircleMazeCellDirection::North(n),
                     Pair::new(coord.x * cell_row_scale_diff + n, coord.y + 1),
                 );
             }
         }
 
-        out
+        unfiltered_neighbours
+            .into_iter()
+            .filter(|(dir, coord)| match reach_type {
+                CellReachType::Anything => true,
+                CellReachType::ReachableOnly => self.cell_at(*coord).reachable(),
+                CellReachType::UnreachableOnly => !self.cell_at(*coord).reachable(),
+            })
+            .collect()
     }
 }
