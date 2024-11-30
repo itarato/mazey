@@ -1,6 +1,7 @@
 mod ascii_drawer;
 mod cell;
 mod circle_maze;
+mod circle_maze_cell;
 mod flo_drawer;
 mod maze;
 mod maze_builder;
@@ -45,8 +46,9 @@ fn maze_example() {
 
 fn main() {
     let mut circle_maze = CircleMaze::new(12);
-    // for i in 0..12 {
-    //     dbg!(circle_maze.cells[i].len());
-    // }
+    for i in 0..12 {
+        dbg!(circle_maze.cells[i].len());
+        // dbg!(circle_maze.cells[i][0].paths.len());
+    }
     FloDrawer::draw_circle_maze(circle_maze);
 }
