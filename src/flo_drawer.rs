@@ -126,6 +126,7 @@ impl FloDrawer {
 
                 gc.stroke_color(Color::Rgba(1.0, 0.8, 0.6, 1.0));
                 gc.line_width(LINE_WIDTH);
+                gc.line_cap(LineCap::Round);
 
                 let level_height = 40.0f32;
 
@@ -152,12 +153,22 @@ impl FloDrawer {
                         let x_to = r * alpha_to_rad.sin();
                         let y_to = r * beta_to_rad.sin();
 
-                        gc.move_to(x_from + offset_x, y_from + offset_y);
-                        gc.line_to(x_to + offset_x, y_to + offset_y);
-                        gc.stroke();
+                        if h == maze.height - 1
+                            || !maze
+                                .cell_at(Pair::new(i, h + 1))
+                                .is_open_at(crate::circle_maze_cell::CircleMazeCellDirection::South)
+                        {
+                            gc.move_to(x_from + offset_x, y_from + offset_y);
+                            gc.line_to(x_to + offset_x, y_to + offset_y);
+                            gc.stroke();
+                        }
 
                         // "Side" (left) wall.
-                        if h < maze.height - 1 {
+                        if h < maze.height - 1
+                            && !maze
+                                .cell_at(Pair::new(i, h + 1))
+                                .is_open_at(crate::circle_maze_cell::CircleMazeCellDirection::West)
+                        {
                             // Inner end.
                             let r_inner = (h as f32 + 1.5) * level_height;
                             let x_to = r_inner * alpha_from_rad.sin();

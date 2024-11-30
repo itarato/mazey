@@ -46,10 +46,20 @@ fn maze_example() {
 
 fn main() {
     let mut circle_maze = CircleMaze::new(12);
-    dbg!(circle_maze.neighbours(Pair::new(0, 4)));
-    for i in 0..12 {
-        dbg!(circle_maze.cells[i].len());
-        // dbg!(circle_maze.cells[i][0].paths.len());
-    }
+    // dbg!(circle_maze.neighbours(Pair::new(0, 4)));
+
+    // circle_maze.connect_cells(
+    //     Pair::new(1, 1),
+    //     circle_maze_cell::CircleMazeCellDirection::South,
+    // );
+    // circle_maze.connect_cells(
+    //     Pair::new(1, 2),
+    //     circle_maze_cell::CircleMazeCellDirection::East,
+    // );
+
+    // for i in 0..12 {
+    //     dbg!(circle_maze.cells[i].len());
+    //     // dbg!(circle_maze.cells[i][0].paths.len());
+    // }
     FloDrawer::draw_circle_maze(circle_maze);
 }
