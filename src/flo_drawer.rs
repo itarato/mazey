@@ -8,7 +8,7 @@ use crate::{circle_maze::CircleMaze, util::Coord, Maze, Pair};
 pub struct FloDrawer;
 
 const CELL_SIZE: f32 = 16.0;
-const LINE_WIDTH: f32 = 4.0;
+const LINE_WIDTH: f32 = 6.0;
 const MAZE_PADDING: f32 = 8.0;
 const LINE_MAP: [[f32; 4]; 4] = [
     [0f32, 0f32, 1f32, 0f32],
