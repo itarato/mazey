@@ -48,6 +48,10 @@ fn maze_example() {
 fn main() {
     let mut circle_maze = CircleMaze::new(32);
     let start = Pair::new(0, 0);
+    let finish = Pair::new(0, 31);
     MazeBuilder::random_circle_maze_creation(&mut circle_maze, start);
+    let solution =
+        Solver::dijkstra_path_finding_solver_for_circle_maze(&circle_maze, start, finish);
+    // dbg!(solution);
     FloDrawer::draw_circle_maze(circle_maze);
 }

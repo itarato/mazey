@@ -1,5 +1,6 @@
 use std::collections::VecDeque;
 
+use crate::circle_maze::CircleMaze;
 use crate::util::*;
 use crate::{Maze, Pair};
 
@@ -128,8 +129,6 @@ impl Solver {
             }
         }
 
-        // dbg!(&distance_map);
-
         // Extract path.
         let mut current_distance = distance_map[finish.y][finish.x];
         if current_distance == -1 {
@@ -169,6 +168,105 @@ impl Solver {
 
                     path.push(current_coord);
 
+                    found_next = true;
+
+                    break;
+                }
+            }
+
+            if current_coord == start {
+                break;
+            }
+
+            if found_next {
+                continue;
+            }
+
+            panic!("Missing previous step.");
+        }
+
+        path.reverse();
+
+        return path;
+    }
+
+    #[allow(unused)]
+    pub fn dijkstra_path_finding_solver_for_circle_maze(
+        maze: &CircleMaze,
+        start: Pair<usize>,
+        finish: Pair<usize>,
+    ) -> Vec<Pair<usize>> {
+        let mut distance_map: Vec<Vec<i32>> = vec![];
+        for h in 0..maze.height {
+            distance_map.push(vec![-1; maze.cells[h].len()]);
+        }
+
+        let mut work_queue: VecDeque<Pair<usize>> = VecDeque::new();
+        work_queue.push_back(start);
+        distance_map[start.y][start.x] = 0;
+
+        let mut completed = false;
+
+        while let Some(current_coord) = work_queue.pop_front() {
+            let neighbours = maze.neighbours(current_coord, CellReachType::ReachableOnly);
+
+            for (dir, neighbour_coord) in neighbours {
+                if !maze.cell_at(current_coord).is_open_at(dir) {
+                    continue;
+                }
+
+                let current_distance = distance_map[current_coord.y][current_coord.x];
+                let neighbour_distance =
+                    distance_map[neighbour_coord.y as usize][neighbour_coord.x as usize];
+
+                if neighbour_distance != -1 {
+                    if neighbour_distance > current_distance + 1 {
+                        panic!("This was not suppose to happen with breadth first search.");
+                    }
+                    // Already visited.
+                    continue;
+                }
+
+                distance_map[neighbour_coord.y as usize][neighbour_coord.x as usize] =
+                    current_distance + 1;
+
+                if neighbour_coord == finish {
+                    completed = true;
+                    break;
+                }
+
+                work_queue.push_back(neighbour_coord);
+            }
+
+            if completed {
+                break;
+            }
+        }
+
+        // Extract path.
+        let mut current_distance = distance_map[finish.y][finish.x];
+        if current_distance == -1 {
+            panic!("Haven't found path.");
+        }
+
+        let mut path: Vec<Pair<usize>> = vec![];
+        let mut current_coord = finish;
+        let mut found_next;
+
+        path.push(current_coord);
+
+        loop {
+            found_next = false;
+            let neighbours = maze.neighbours(current_coord, CellReachType::ReachableOnly);
+
+            for (dir, neighbour_coord) in neighbours {
+                if distance_map[neighbour_coord.y as usize][neighbour_coord.x as usize]
+                    == current_distance - 1
+                    && maze.cell_at(current_coord).is_open_at(dir)
+                {
+                    current_distance -= 1;
+                    current_coord = neighbour_coord;
+                    path.push(current_coord);
                     found_next = true;
 
                     break;
