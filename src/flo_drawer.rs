@@ -3,7 +3,7 @@ use flo_draw::{
     create_drawing_window, with_2d_graphics,
 };
 
-use crate::{circle_maze::CircleMaze, Maze, Pair};
+use crate::{circle_maze::CircleMaze, util::Coord, Maze, Pair};
 
 pub struct FloDrawer;
 
@@ -110,7 +110,7 @@ impl FloDrawer {
         });
     }
 
-    pub fn draw_circle_maze(maze: CircleMaze) {
+    pub fn draw_circle_maze(maze: CircleMaze, solution: Vec<Coord>) {
         with_2d_graphics(move || {
             let canvas = create_drawing_window("Mazey");
 
@@ -126,7 +126,7 @@ impl FloDrawer {
                 gc.canvas_height(h + (MAZE_PADDING * 2.0));
                 gc.center_region(0.0, -MAZE_PADDING, w, h + MAZE_PADDING);
 
-                gc.stroke_color(Color::Rgba(1.0, 0.8, 0.6, 1.0));
+                gc.stroke_color(Color::Rgba(0.65, 0.7, 0.75, 1.0));
                 gc.line_width(LINE_WIDTH);
                 gc.line_cap(LineCap::Round);
 
@@ -181,7 +181,40 @@ impl FloDrawer {
                         }
                     }
                 }
+
+                // Solution.
+                if solution.len() > 1 {
+                    gc.stroke_color(Color::Rgba(1.0, 0.4, 0.1, 1.0));
+                    for i in 1..solution.len() {
+                        let (x_from, y_from) = FloDrawer::circle_maze_pos_for_cell(
+                            &maze,
+                            solution[i - 1],
+                            level_height,
+                        );
+                        let (x_to, y_to) =
+                            FloDrawer::circle_maze_pos_for_cell(&maze, solution[i], level_height);
+                        gc.move_to(x_from + offset_x, y_from + offset_y);
+                        gc.line_to(x_to + offset_x, y_to + offset_y);
+                        gc.stroke();
+                    }
+                }
             });
         });
+    }
+
+    fn circle_maze_pos_for_cell(
+        maze: &CircleMaze,
+        cell_coord: Coord,
+        row_height: f32,
+    ) -> (f32, f32) {
+        let row_lenght = maze.cells[cell_coord.y].len();
+        let r = row_height * cell_coord.y as f32;
+        let alpha = (360.0 / row_lenght as f32) * (cell_coord.x as f32 + 0.5);
+        let alpha_rad = (alpha / 180.0) * std::f32::consts::PI;
+        let beta_rad = ((90.0 - alpha) / 180.0) * std::f32::consts::PI;
+        let x = r * alpha_rad.sin();
+        let y = r * beta_rad.sin();
+
+        (x, y)
     }
 }

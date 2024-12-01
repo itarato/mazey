@@ -53,5 +53,5 @@ fn main() {
     let solution =
         Solver::dijkstra_path_finding_solver_for_circle_maze(&circle_maze, start, finish);
     // dbg!(solution);
-    FloDrawer::draw_circle_maze(circle_maze);
+    FloDrawer::draw_circle_maze(circle_maze, solution);
 }
